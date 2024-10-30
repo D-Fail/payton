@@ -1,53 +1,37 @@
-import asyncio
-import websockets
+ import requests
 
-# WebSocket client to connect to the server
-async def vpn_client(uri):
-    async with websockets.connect(uri) as websocket:
-        print(f"Connected to {uri}")
-        
-        # Send a message to initiate connection
-        await websocket.send("Client connected!")
-        print(f"Sent: Client connected!")
+# Replace with the client ID and redirect URI of your test application
+CLIENT_ID = 'your_client_id'
+REDIRECT_URI = 'http://your-redirect-uri.com/callback'
 
-        # Receive and print the server response
-        response = await websocket.recv()
-        print(f"Received: {response}")
+# OAuth 2.0 authorization request
+auth_url = f'https://www.facebook.com/v10.0/dialog/oauth?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&response_type=code&scope=email'
 
-        # Here, you can send/receive actual VPN data, configure routing, etc.
-        while True:
-            data = input("Enter data to send: ")
-            await websocket.send(data)
-            response = await websocket.recv()
-            print(f"Received: {response}")
+# Redirect the user to the authorization URL
+print(f"Go to the following URL to authorize the application:\n{auth_url}")
 
-# Main loop to run the WebSocket client
-if __name__ == "__main__":
-    # Replace with the actual WebSocket server URI
-    server_uri = "ws://localhost:8765"
+# Capture the authorization code from the redirect URI
+code = input("Enter the authorization code from the redirect URI: ")
+
+# Exchange the authorization code for an access token
+token_url = 'https://graph.facebook.com/v10.0/oauth/access_token'
+token_data = {
+    'client_id': CLIENT_ID,
+    'redirect_uri': REDIRECT_URI,
+    'client_secret': 'your_client_secret',
+    'code': code
+}
+
+response = requests.get(token_url, params=token_data)
+access_token = response.json().get('access_token')
+
+# Use the access token to make API requests
+if access_token:
+    print(f"Access Token: {access_token}")
+    # Example API request
+    user_info_url = f'https://graph.facebook.com/me?access_token={access_token}'
+    user_info = requests.get(user_info_url).json()
+    print(f"User Info: {user_info}")
+else:
+    print("Failed to obtain access token.")
     
-    # Start the VPN client
-    asyncio.get_event_loop().run_until_complete(vpn_client(server_uri))
-    
- import asyncio
-import websockets
-
-# WebSocket server to handle client connections
-async def vpn_handler(websocket, path):
-    print("Client connected")
-    
-    # Handle receiving data from the client
-    async for message in websocket:
-        print(f"Received: {message}")
-        
-        # Echo the message back to the client
-        await websocket.send(f"Server received: {message}")
-
-# Start the WebSocket server
-if __name__ == "__main__":
-    start_server = websockets.serve(vpn_handler, "localhost", 8765)
-    
-    # Run the server until manually stopped
-    asyncio.get_event_loop().run_until_complete(start_server)
-    print("Server started at ws://localhost:8765")
-    asyncio.get_event_loop().run_forever()
