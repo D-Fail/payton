@@ -1,4 +1,4 @@
- import requests
+
 
 # Replace with the client ID and redirect URI of your test application
 CLIENT_ID = 'your_client_id'
